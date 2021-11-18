@@ -1,0 +1,30 @@
+{
+    "dependencies": {
+        "bunyan": "^1.8.15",
+        "bunyan-format": "^0.2.1",
+        "fs-jetpack": "^4.2.0",
+        "nodemailer": "^6.7.0",
+        "prompts": "^2.4.2"
+    },
+    "name": "quick-mail-merge",
+    "description": "A quick and easy JS mail merge that supports email HTML and TXT customization.",
+    "version": "1.0.0",
+    "main": "index.js",
+    "devDependencies": {},
+    "scripts": {
+        "build": "pkg -t node14-windows index.js --out-path=bin/"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ChlodAlejandro/quick-mail-merge.git"
+    },
+    "keywords": [
+        "mail"
+    ],
+    "author": "Chlod Alejandro <chlod@chlod.net>",
+    "license": "Apache-2.0",
+    "bugs": {
+        "url": "https://github.com/ChlodAlejandro/quick-mail-merge/issues"
+    },
+    "homepage": "https://github.com/ChlodAlejandro/quick-mail-merge#readme"
+}
