@@ -52,6 +52,7 @@ const prompts = require("prompts");
             const rowValue = row[columnId];
             rowObject[csvColumn] = rowValue;
         }
+        rowObject.__original = rowString;
         csvRowsAsObject.push(rowObject);
     }
 
@@ -109,10 +110,14 @@ const prompts = require("prompts");
             html: modifiedTemplateHtml
         }).then(() => {
             log.info("Email sent to " + targetEmail + "! (" + (++done) + "/" + csvRows.length + ")");
-            fs.appendFileSync("okay.csv", row + "\n");
+            if (!fs.existsSync("okay.csv"))
+                fs.writeFileSync("okay.csv", csvHeader + "\n");
+            fs.appendFileSync("okay.csv", row["__original"] + "\n");
         }).catch(e => {
             log.error("Could not send email to " + targetEmail + ".", e);
-            fs.appendFileSync("failed.csv", row + "\n");
+            if (!fs.existsSync("failed.csv"))
+                fs.writeFileSync("failed.csv", csvHeader + "\n");
+            fs.appendFileSync("failed.csv", row["__original"] + "\n");
         });
     }
 
