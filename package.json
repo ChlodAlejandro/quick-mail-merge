@@ -4,13 +4,13 @@
         "bunyan-format": "^0.2.1",
         "fs-jetpack": "^4.2.0",
         "nodemailer": "^6.7.0",
+        "nodemailer-html-to-text": "^3.2.0",
         "prompts": "^2.4.2"
     },
     "name": "quick-mail-merge",
     "description": "A quick and easy JS mail merge that supports email HTML and TXT customization.",
     "version": "1.0.0",
     "main": "index.js",
-    "devDependencies": {},
     "scripts": {
         "build": "pkg -t node14-windows index.js --out-path=bin/"
     },

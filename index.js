@@ -4,6 +4,7 @@ const bunyanFormat = require("bunyan-format");
 const fs = require("fs");
 const path = require("path");
 const prompts = require("prompts");
+const htmlToText = require("nodemailer-html-to-text").htmlToText;
 
 (async() => {
     const log = bunyan.createLogger({
@@ -27,16 +28,18 @@ const prompts = require("prompts");
         log.info("Could not find an assets/email.html file.");
         process.exit(1);
     }
-    if (!fs.existsSync(textEmailPath)) {
-        log.info("Could not find an assets/email.txt file.");
-        process.exit(1);
-    }
     if (!fs.existsSync(dataPath)) {
         log.info("Could not find an assets/data.csv file.");
         process.exit(1);
     }
 
-    const templateText = fs.readFileSync(textEmailPath).toString().replace(/\r/g, "");
+    const templateText = (() => {
+        try {
+            return fs.readFileSync(textEmailPath).toString().replace(/\r/g, "");
+        } catch (e) {
+            return undefined;
+        }
+    })();
     const templateHtml = fs.readFileSync(htmlEmailPath).toString().replace(/\r/g, "");
     const csvText = fs.readFileSync(dataPath).toString().replace(/\r/g, "");
     const csvRows = csvText.trim().split("\n");
@@ -87,27 +90,47 @@ const prompts = require("prompts");
             pass: config.smtp.pass
         },
     });
+    transporter.use('compile', htmlToText());
 
     let done = 0;
     
     log.info("Mailing...");
-    for (const row of csvRowsAsObject) {
+    emailLoop: for (const row of csvRowsAsObject) {
         const targetEmail = row[config.emailColumn];
         log.info("Sending email to " + targetEmail + "...");
 
-        let modifiedTemplateText = templateText;
+        let modifiedTemplateText = templateText || "";
         let modifiedTemplateHtml = templateHtml;
         for (const [key, value] of Object.entries(row)) {
             modifiedTemplateText = modifiedTemplateText.replace(new RegExp(`{{{${key}}}}`, "g"), value);
             modifiedTemplateHtml = modifiedTemplateHtml.replace(new RegExp(`{{{${key}}}}`, "g"), value);
         }
+		
+		const attachments = Object.keys(row)
+			.filter(v => v.startsWith("file:"))
+			.map(v => ({
+                filename: path.basename(row[v]),
+                path: path.resolve(process.cwd(), row[v])
+            }));
+
+        for (const attachment of Object.values(attachments)) {
+            if (!fs.existsSync(attachment.path)) {
+                log.error(`Could not find file for ${targetEmail}: ${attachment.path}`);
+                if (!fs.existsSync("failed.csv"))
+                    fs.writeFileSync("failed.csv", csvHeader + "\n");
+                fs.appendFileSync("failed.csv", row["__original"] + "\n");
+                continue emailLoop;
+            }
+        }
 
         await transporter.sendMail({
             from: config.from,
             to: targetEmail,
+			cc: config.cc,
             subject: config.subject,
-            text: modifiedTemplateText,
-            html: modifiedTemplateHtml
+            text: templateText == null ? undefined : modifiedTemplateText,
+            html: modifiedTemplateHtml,
+			attachments
         }).then(() => {
             log.info("Email sent to " + targetEmail + "! (" + (++done) + "/" + csvRows.length + ")");
             if (!fs.existsSync("okay.csv"))
